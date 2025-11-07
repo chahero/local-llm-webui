@@ -10,40 +10,16 @@
     <div class="container">
         <header>
             <h1>Local LLM WebUI</h1>
-            <div id="status" class="status disconnected">
-                <span class="indicator"></span>
-                <span id="status-text">Ollama 연결 확인 중...</span>
+            <div class="header-right">
+                <button id="models-btn" class="btn btn-primary">⚙️ 모델 관리</button>
+                <div id="status" class="status disconnected">
+                    <span class="indicator"></span>
+                    <span id="status-text">Ollama 연결 확인 중...</span>
+                </div>
             </div>
         </header>
 
         <main>
-            <div class="sidebar">
-                <div class="models-panel">
-                    <h2>모델 관리</h2>
-
-                    <div class="model-list">
-                        <h3>설치된 모델</h3>
-                        <div id="models-container" class="models-container">
-                            <p class="loading">로딩 중...</p>
-                        </div>
-                    </div>
-
-                    <div class="model-download">
-                        <h3>모델 다운로드</h3>
-                        <div class="input-group">
-                            <input
-                                type="text"
-                                id="model-name-input"
-                                placeholder="e.g., llama2, mistral"
-                                class="model-input"
-                            >
-                            <button id="pull-btn" class="btn btn-primary">다운로드</button>
-                        </div>
-                        <div id="pull-status" class="status-message"></div>
-                    </div>
-                </div>
-            </div>
-
             <div class="chat-area">
                 <div class="model-selector">
                     <label for="model-select">모델 선택:</label>
@@ -59,19 +35,79 @@
                 </div>
 
                 <div class="input-area">
+                    <!-- 이미지 미리보기 -->
+                    <div id="image-preview-container" class="image-preview-container" style="display: none;">
+                        <div class="image-preview-wrapper">
+                            <img id="image-preview" class="image-preview" alt="Preview">
+                            <button id="remove-image-btn" class="remove-image-btn">✕</button>
+                        </div>
+                    </div>
+
                     <div class="input-group">
                         <textarea
                             id="message-input"
-                            placeholder="메시지를 입력해주세요..."
+                            placeholder="메시지를 입력해주세요... (이미지 드래그/붙여넣기 가능)"
                             rows="3"
                             class="message-input"
                         ></textarea>
-                        <button id="send-btn" class="btn btn-primary send-btn">전송</button>
+                        <div class="input-actions">
+                            <button id="image-upload-btn" class="btn btn-secondary" title="이미지 업로드">🖼️</button>
+                            <button id="send-btn" class="btn btn-primary send-btn">전송</button>
+                        </div>
                     </div>
+
+                    <!-- 숨겨진 파일 입력 -->
+                    <input
+                        type="file"
+                        id="image-input"
+                        accept="image/*"
+                        style="display: none;"
+                    >
                 </div>
             </div>
         </main>
     </div>
+
+    <!-- 모델 관리 모달 -->
+    <div id="models-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" id="modal-header">
+                <h2>모델 관리</h2>
+                <button id="close-modal-btn" class="close-btn">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- 설치된 모델 -->
+                <div class="modal-section">
+                    <h3>📦 설치된 모델</h3>
+                    <div id="models-list" class="models-list">
+                        <p class="loading">로딩 중...</p>
+                    </div>
+                </div>
+
+                <!-- 모델 다운로드 -->
+                <div class="modal-section">
+                    <h3>⬇️ 모델 다운로드</h3>
+                    <div class="input-group">
+                        <input
+                            type="text"
+                            id="model-name-input"
+                            placeholder="예: llama2, mistral, neural-chat"
+                            class="modal-input"
+                        >
+                        <button id="pull-btn" class="btn btn-primary">다운로드</button>
+                    </div>
+                    <div id="pull-status" class="status-message"></div>
+                </div>
+            </div>
+
+            <!-- Resize handle -->
+            <div id="resize-handle" class="resize-handle"></div>
+        </div>
+    </div>
+
+    <!-- 모달 백그라운드 -->
+    <div id="modal-overlay" class="modal-overlay"></div>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>

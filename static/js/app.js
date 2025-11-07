@@ -3,7 +3,17 @@ class OllamaChat {
         this.currentModel = null;
         this.messages = [];
         this.models = [];
+        this.selectedImage = null;  // 선택된 이미지 저장
         this.init();
+    }
+
+    // 바이트를 읽기 좋은 형식으로 변환
+    formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
     }
 
     async init() {
@@ -13,6 +23,7 @@ class OllamaChat {
     }
 
     setupEventListeners() {
+        // 채팅
         document.getElementById('send-btn').addEventListener('click', () => this.sendMessage());
         document.getElementById('message-input').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) {
@@ -26,7 +37,174 @@ class OllamaChat {
             this.updateChatDisplay();
         });
 
+        // 모달
+        document.getElementById('models-btn').addEventListener('click', () => this.openModal());
+        document.getElementById('close-modal-btn').addEventListener('click', () => this.closeModal());
+        document.getElementById('modal-overlay').addEventListener('click', () => this.closeModal());
+
+        // 모달 드래그
+        const modalHeader = document.getElementById('modal-header');
+        modalHeader.addEventListener('mousedown', (e) => this.startDragModal(e));
+
+        // 모달 크기 조절
+        const resizeHandle = document.getElementById('resize-handle');
+        resizeHandle.addEventListener('mousedown', (e) => this.startResizeModal(e));
+
+        // 모델 다운로드
         document.getElementById('pull-btn').addEventListener('click', () => this.pullModel());
+
+        // 이미지 업로드
+        document.getElementById('image-upload-btn').addEventListener('click', () => {
+            document.getElementById('image-input').click();
+        });
+
+        document.getElementById('image-input').addEventListener('change', (e) => {
+            this.handleImageUpload(e);
+        });
+
+        document.getElementById('remove-image-btn').addEventListener('click', () => {
+            this.removeImage();
+        });
+
+        // 드래그 드롭
+        const messageInput = document.getElementById('message-input');
+        messageInput.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            messageInput.classList.add('drag-over');
+        });
+
+        messageInput.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            messageInput.classList.remove('drag-over');
+        });
+
+        messageInput.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            messageInput.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                this.loadImage(files[0]);
+            }
+        });
+
+        // 클립보드 붙여넣기
+        messageInput.addEventListener('paste', (e) => {
+            const items = e.clipboardData?.items;
+            if (items) {
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.startsWith('image/')) {
+                        e.preventDefault();
+                        const file = items[i].getAsFile();
+                        this.loadImage(file);
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
+    startDragModal(e) {
+        const modal = document.getElementById('models-modal');
+        const modalContent = modal.querySelector('.modal-content');
+        let isResizing = false;
+
+        // resize handle인지 확인
+        if (e.target.id === 'resize-handle') {
+            return;
+        }
+
+        const rect = modal.getBoundingClientRect();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startLeft = rect.left;
+        const startTop = rect.top;
+
+        const handleMouseMove = (moveEvent) => {
+            const deltaX = moveEvent.clientX - startX;
+            const deltaY = moveEvent.clientY - startY;
+
+            modal.style.left = (startLeft + deltaX) + 'px';
+            modal.style.top = (startTop + deltaY) + 'px';
+            modal.style.transform = 'none';
+        };
+
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    startResizeModal(e) {
+        const modal = document.getElementById('models-modal');
+        const rect = modal.getBoundingClientRect();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startWidth = rect.width;
+        const startHeight = rect.height;
+
+        const handleMouseMove = (moveEvent) => {
+            const deltaX = moveEvent.clientX - startX;
+            const deltaY = moveEvent.clientY - startY;
+
+            const newWidth = Math.max(400, startWidth + deltaX);
+            const newHeight = Math.max(300, startHeight + deltaY);
+
+            modal.style.width = newWidth + 'px';
+            modal.style.height = newHeight + 'px';
+        };
+
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    openModal() {
+        document.getElementById('models-modal').classList.add('active');
+        document.getElementById('modal-overlay').classList.add('active');
+    }
+
+    closeModal() {
+        document.getElementById('models-modal').classList.remove('active');
+        document.getElementById('modal-overlay').classList.remove('active');
+    }
+
+    handleImageUpload(e) {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            this.loadImage(file);
+        }
+    }
+
+    loadImage(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.selectedImage = e.target.result;
+            this.showImagePreview();
+        };
+        reader.readAsDataURL(file);
+    }
+
+    showImagePreview() {
+        const container = document.getElementById('image-preview-container');
+        const preview = document.getElementById('image-preview');
+        preview.src = this.selectedImage;
+        container.style.display = 'flex';
+    }
+
+    removeImage() {
+        this.selectedImage = null;
+        document.getElementById('image-preview-container').style.display = 'none';
+        document.getElementById('image-input').value = '';
     }
 
     async checkConnection() {
@@ -73,26 +251,37 @@ class OllamaChat {
     }
 
     updateModelDisplay() {
-        const container = document.getElementById('models-container');
+        const listContainer = document.getElementById('models-list');
         const select = document.getElementById('model-select');
 
         // Clear and rebuild
-        container.innerHTML = '';
+        listContainer.innerHTML = '';
         select.innerHTML = '<option value="">모델을 선택해주세요</option>';
 
         if (this.models.length === 0) {
-            container.innerHTML = '<p class="loading">설치된 모델이 없습니다</p>';
+            listContainer.innerHTML = '<p class="loading">설치된 모델이 없습니다</p>';
             return;
         }
 
         this.models.forEach(model => {
-            // Add to sidebar
+            // Add to modal list
             const modelEl = document.createElement('div');
             modelEl.className = 'model-item';
+
+            const infoEl = document.createElement('div');
+            infoEl.className = 'model-item-info';
 
             const nameEl = document.createElement('span');
             nameEl.className = 'model-item-name';
             nameEl.textContent = model.name;
+
+            const sizeEl = document.createElement('span');
+            sizeEl.className = 'model-item-size';
+            const sizeText = model.size ? this.formatBytes(model.size) : '크기 불명';
+            sizeEl.textContent = sizeText;
+
+            infoEl.appendChild(nameEl);
+            infoEl.appendChild(sizeEl);
 
             const actionsEl = document.createElement('div');
             actionsEl.className = 'model-item-actions';
@@ -100,12 +289,15 @@ class OllamaChat {
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'btn-delete';
             deleteBtn.textContent = '삭제';
-            deleteBtn.addEventListener('click', () => this.deleteModel(model.name));
+            deleteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.deleteModel(model.name);
+            });
 
             actionsEl.appendChild(deleteBtn);
-            modelEl.appendChild(nameEl);
+            modelEl.appendChild(infoEl);
             modelEl.appendChild(actionsEl);
-            container.appendChild(modelEl);
+            listContainer.appendChild(modelEl);
 
             // Add to select
             const option = document.createElement('option');
@@ -119,19 +311,28 @@ class OllamaChat {
         const input = document.getElementById('message-input');
         const message = input.value.trim();
 
-        if (!message) return;
+        if (!message && !this.selectedImage) return;
         if (!this.currentModel) {
             alert('모델을 선택해주세요');
             return;
         }
 
-        // Add user message
-        this.messages.push({
+        // 사용자 메시지 객체 생성
+        const userMessage = {
             role: 'user',
-            content: message
-        });
+            content: message || '(이미지만 첨부됨)'
+        };
+
+        // 이미지가 있으면 추가
+        if (this.selectedImage) {
+            userMessage.images = [this.selectedImage.split(',')[1]]; // base64만 추출
+        }
+
+        // Add user message to chat
+        this.messages.push(userMessage);
 
         input.value = '';
+        this.removeImage();
         this.updateChatDisplay();
 
         // Send to server
@@ -140,6 +341,21 @@ class OllamaChat {
             sendBtn.disabled = true;
             sendBtn.textContent = '응답 중...';
 
+            // API 전송용 메시지 포맷 (이미지는 content에 포함)
+            const messagesForAPI = this.messages.map(msg => {
+                if (msg.images) {
+                    return {
+                        role: msg.role,
+                        content: msg.content,
+                        images: msg.images
+                    };
+                }
+                return {
+                    role: msg.role,
+                    content: msg.content
+                };
+            });
+
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
@@ -147,7 +363,7 @@ class OllamaChat {
                 },
                 body: JSON.stringify({
                     model: this.currentModel,
-                    messages: this.messages
+                    messages: messagesForAPI
                 })
             });
 
@@ -198,6 +414,17 @@ class OllamaChat {
             contentEl.textContent = msg.content;
 
             messageEl.appendChild(contentEl);
+
+            // 이미지가 있으면 표시 (사용자 메시지만)
+            if (msg.images && msg.role === 'user') {
+                const imageEl = document.createElement('div');
+                imageEl.className = 'message-image';
+                const img = document.createElement('img');
+                img.src = 'data:image/jpeg;base64,' + msg.images[0];
+                imageEl.appendChild(img);
+                messageEl.appendChild(imageEl);
+            }
+
             container.appendChild(messageEl);
         });
 
@@ -274,6 +501,14 @@ class OllamaChat {
 
             if (data.success) {
                 await this.loadModels();
+
+                // 선택된 모델이 삭제되었으면 초기화
+                if (this.currentModel === modelName) {
+                    this.currentModel = null;
+                    this.messages = [];
+                    document.getElementById('model-select').value = '';
+                    this.updateChatDisplay();
+                }
             } else {
                 alert('삭제 실패: ' + data.message);
             }
