@@ -4,7 +4,42 @@ class OllamaChat {
         this.messages = [];
         this.models = [];
         this.selectedImage = null;  // 선택된 이미지 저장
+        this.setupMarked();
         this.init();
+    }
+
+    // Marked 설정
+    setupMarked() {
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: false,
+            mangle: false
+        });
+
+        // 코드 블록에 하이라이팅 적용
+        const renderer = new marked.Renderer();
+        const originalCode = renderer.code.bind(renderer);
+        renderer.code = function(code, language) {
+            if (language && hljs.getLanguage(language)) {
+                return `<pre><code class="hljs language-${language}">${hljs.highlight(code, { language }).value}</code></pre>`;
+            } else {
+                return `<pre><code class="hljs">${hljs.highlightAuto(code).value}</code></pre>`;
+            }
+        };
+        marked.setOptions({ renderer });
+    }
+
+    // 마크다운을 HTML로 변환
+    renderMarkdown(text) {
+        try {
+            const html = marked.parse(text);
+            // XSS 공격 방지
+            return DOMPurify.sanitize(html);
+        } catch (error) {
+            console.error('Markdown render error:', error);
+            return text;
+        }
     }
 
     // 바이트를 읽기 좋은 형식으로 변환
@@ -35,6 +70,11 @@ class OllamaChat {
             this.currentModel = e.target.value;
             this.messages = [];
             this.updateChatDisplay();
+
+            // 선택한 모델 저장
+            if (this.currentModel) {
+                this.saveLastModel(this.currentModel);
+            }
         });
 
         // 모달
@@ -242,11 +282,34 @@ class OllamaChat {
             if (data.success) {
                 this.models = data.models || [];
                 this.updateModelDisplay();
+
+                // 마지막 사용한 모델 자동 선택
+                this.restoreLastModel();
             } else {
                 console.error('Failed to load models:', data.message);
             }
         } catch (error) {
             console.error('Error loading models:', error);
+        }
+    }
+
+    // 마지막 사용한 모델 저장
+    saveLastModel(modelName) {
+        localStorage.setItem('lastModel', modelName);
+    }
+
+    // 마지막 사용한 모델 복원
+    restoreLastModel() {
+        const lastModel = localStorage.getItem('lastModel');
+        if (lastModel) {
+            const select = document.getElementById('model-select');
+            // 저장된 모델이 존재하는지 확인
+            if (Array.from(select.options).some(opt => opt.value === lastModel)) {
+                select.value = lastModel;
+                this.currentModel = lastModel;
+                this.messages = [];
+                this.updateChatDisplay();
+            }
         }
     }
 
@@ -411,7 +474,13 @@ class OllamaChat {
 
             const contentEl = document.createElement('div');
             contentEl.className = 'message-content';
-            contentEl.textContent = msg.content;
+
+            // AI 응답은 마크다운으로 렌더링, 사용자 입력은 그대로 표시
+            if (msg.role === 'assistant') {
+                contentEl.innerHTML = this.renderMarkdown(msg.content);
+            } else {
+                contentEl.textContent = msg.content;
+            }
 
             messageEl.appendChild(contentEl);
 
