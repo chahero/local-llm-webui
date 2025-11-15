@@ -56,3 +56,6 @@ instance/
 
 # Package files
 *.whl
+test_nemo_ocr_v1.py
+test_nemotron-parse.py
+.claude/settings.local.json

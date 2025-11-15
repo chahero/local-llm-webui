@@ -4,6 +4,7 @@ class OllamaChat {
         this.messages = [];
         this.models = [];
         this.selectedImage = null;  // 선택된 이미지 저장
+        this.currentUser = null;
         this.setupMarked();
         this.init();
     }
@@ -52,12 +53,18 @@ class OllamaChat {
     }
 
     async init() {
+        // 로그인 상태 확인 (사용자 정보 로드)
+        await this.checkAuth();
+
         this.setupEventListeners();
         await this.checkConnection();
         await this.loadModels();
     }
 
     setupEventListeners() {
+        // 로그아웃
+        document.getElementById('logout-btn').addEventListener('click', () => this.logout());
+
         // 채팅
         document.getElementById('send-btn').addEventListener('click', () => this.sendMessage());
         document.getElementById('message-input').addEventListener('keydown', (e) => {
@@ -246,6 +253,54 @@ class OllamaChat {
         this.selectedImage = null;
         document.getElementById('image-preview-container').style.display = 'none';
         document.getElementById('image-input').value = '';
+    }
+
+    async checkAuth() {
+        """로그인 상태 확인"""
+        try {
+            const response = await fetch('/api/auth/check');
+            const data = await response.json();
+
+            if (data.authenticated) {
+                this.currentUser = data.user;
+                this.updateUserDisplay();
+                return true;
+            } else {
+                return false;
+            }
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            return false;
+        }
+    }
+
+    updateUserDisplay() {
+        """사용자 정보 표시"""
+        const usernameDisplay = document.getElementById('username-display');
+        if (this.currentUser && usernameDisplay) {
+            usernameDisplay.textContent = this.currentUser.username;
+        }
+    }
+
+    async logout() {
+        """로그아웃"""
+        try {
+            const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                window.location.href = '/login';
+            } else {
+                alert('로그아웃 중 오류가 발생했습니다');
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+            alert('로그아웃 중 오류가 발생했습니다');
+        }
     }
 
     async checkConnection() {

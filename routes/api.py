@@ -1,23 +1,27 @@
 from flask import Blueprint, request, jsonify, Response
 from utils.ollama_client import OllamaClient
+from utils.decorators import login_required
 import json
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 ollama = OllamaClient()
 
 @api_bp.route('/health', methods=['GET'])
+@login_required
 def health_check():
     """Ollama 서버 연결 확인"""
     result = ollama.check_connection()
     return jsonify(result)
 
 @api_bp.route('/models', methods=['GET'])
+@login_required
 def get_models():
     """모델 목록 조회"""
     result = ollama.get_models()
     return jsonify(result)
 
 @api_bp.route('/chat', methods=['POST'])
+@login_required
 def chat():
     """채팅 (스트리밍)"""
     data = request.json
@@ -66,6 +70,7 @@ def chat():
     return Response(generate(), mimetype='application/x-ndjson')
 
 @api_bp.route('/pull', methods=['POST'])
+@login_required
 def pull_model():
     """모델 다운로드"""
     data = request.json
@@ -78,6 +83,7 @@ def pull_model():
     return jsonify(result)
 
 @api_bp.route('/delete', methods=['POST'])
+@login_required
 def delete_model():
     """모델 삭제"""
     data = request.json

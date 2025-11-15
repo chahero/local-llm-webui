@@ -9,3 +9,8 @@ class Config:
     OLLAMA_API_URL = os.getenv('OLLAMA_API_URL', 'http://localhost:11434')
     DEBUG = os.getenv('FLASK_DEBUG', False)
     SERVER_PORT = int(os.getenv('SERVER_PORT', 5000))
+
+    # SQLite 설정
+    DATABASE_PATH = os.getenv('DATABASE_PATH', './app.db')
+    SQLALCHEMY_DATABASE_URI = f'sqlite:///{DATABASE_PATH}'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
