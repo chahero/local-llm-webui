@@ -61,7 +61,8 @@ class OllamaChat {
         // 채팅
         document.getElementById('send-btn').addEventListener('click', () => this.sendMessage());
         document.getElementById('message-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 this.sendMessage();
             }
         });
@@ -430,20 +431,47 @@ class OllamaChat {
                 })
             });
 
-            const data = await response.json();
-
-            if (data.success) {
-                this.messages.push({
-                    role: 'assistant',
-                    content: data.message
-                });
-            } else {
-                this.messages.push({
-                    role: 'assistant',
-                    content: '에러: ' + data.message
-                });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
+            // 스트리밍 응답 처리
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let fullContent = '';
+            let assistantMessage = {
+                role: 'assistant',
+                content: ''
+            };
+
+            // 어시스턴트 메시지를 미리 추가
+            this.messages.push(assistantMessage);
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.trim()) {
+                        try {
+                            const data = JSON.parse(line);
+                            if (data.success && data.chunk) {
+                                fullContent += data.chunk;
+                                // 실시간으로 메시지 업데이트
+                                assistantMessage.content = fullContent;
+                                this.updateChatDisplay();
+                            }
+                        } catch (e) {
+                            // JSON 파싱 에러는 무시
+                        }
+                    }
+                }
+            }
+
+            // 최종 업데이트
             this.updateChatDisplay();
         } catch (error) {
             console.error('Error sending message:', error);

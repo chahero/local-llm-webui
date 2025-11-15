@@ -64,7 +64,7 @@ class OllamaClient:
             }
 
     def chat(self, model: str, messages: List[Dict], stream: bool = False) -> Dict:
-        """채팅 API 호출"""
+        """채팅 API 호출 (스트리밍 지원)"""
         try:
             payload = {
                 "model": model,
@@ -75,7 +75,8 @@ class OllamaClient:
             response = requests.post(
                 f"{self.base_url}/api/chat",
                 json=payload,
-                timeout=self.timeout * 10  # 채팅은 더 긴 타임아웃
+                timeout=None if stream else self.timeout * 10,  # 스트리밍은 무제한 타임아웃
+                stream=stream  # 스트리밍 모드 활성화
             )
 
             if response.status_code == 200:
