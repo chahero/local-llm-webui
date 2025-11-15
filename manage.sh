@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 APP_NAME="Local LLM WebUI"
 PID_FILE="app.pid"
 LOG_FILE="app.log"
-VENV_DIR="venv"
+VENV_DIR=".venv"
 PYTHON_CMD="python3"
 MAIN_SCRIPT="main.py"
 
