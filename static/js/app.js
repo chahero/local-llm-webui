@@ -256,7 +256,7 @@ class OllamaChat {
     }
 
     async checkAuth() {
-        """로그인 상태 확인"""
+        // 로그인 상태 확인
         try {
             const response = await fetch('/api/auth/check');
             const data = await response.json();
@@ -275,7 +275,7 @@ class OllamaChat {
     }
 
     updateUserDisplay() {
-        """사용자 정보 표시"""
+        // 사용자 정보 표시
         const usernameDisplay = document.getElementById('username-display');
         if (this.currentUser && usernameDisplay) {
             usernameDisplay.textContent = this.currentUser.username;
@@ -283,7 +283,7 @@ class OllamaChat {
     }
 
     async logout() {
-        """로그아웃"""
+        // 로그아웃
         try {
             const response = await fetch('/api/auth/logout', {
                 method: 'POST',
@@ -306,6 +306,12 @@ class OllamaChat {
     async checkConnection() {
         try {
             const response = await fetch('/api/health');
+
+            if (!response.ok) {
+                console.error('Health check failed:', response.status);
+                throw new Error(`HTTP ${response.status}`);
+            }
+
             const data = await response.json();
 
             const statusEl = document.getElementById('status');
@@ -333,6 +339,12 @@ class OllamaChat {
     async loadModels() {
         try {
             const response = await fetch('/api/models');
+
+            if (!response.ok) {
+                console.error('Models fetch failed:', response.status);
+                throw new Error(`HTTP ${response.status}`);
+            }
+
             const data = await response.json();
 
             if (data.success) {
