@@ -92,11 +92,15 @@ class OllamaChat {
 
         // 모달 드래그
         const modalHeader = document.getElementById('modal-header');
-        modalHeader.addEventListener('mousedown', (e) => this.startDragModal(e));
+        if (modalHeader) {
+            modalHeader.addEventListener('mousedown', (e) => this.startDragModal(e));
+        }
 
-        // 모달 크기 조절
+        // 모달 크기 조절 (없으면 스킵)
         const resizeHandle = document.getElementById('resize-handle');
-        resizeHandle.addEventListener('mousedown', (e) => this.startResizeModal(e));
+        if (resizeHandle) {
+            resizeHandle.addEventListener('mousedown', (e) => this.startResizeModal(e));
+        }
 
         // 모델 다운로드
         document.getElementById('pull-btn').addEventListener('click', () => this.pullModel());
@@ -390,24 +394,24 @@ class OllamaChat {
         select.innerHTML = '<option value="">모델을 선택해주세요</option>';
 
         if (this.models.length === 0) {
-            listContainer.innerHTML = '<p class="loading">설치된 모델이 없습니다</p>';
+            listContainer.innerHTML = '<p class="text-center text-slate-400 py-4">설치된 모델이 없습니다</p>';
             return;
         }
 
         this.models.forEach(model => {
             // Add to modal list
             const modelEl = document.createElement('div');
-            modelEl.className = 'model-item';
+            modelEl.className = 'flex justify-between items-center p-4 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition cursor-default';
 
             const infoEl = document.createElement('div');
-            infoEl.className = 'model-item-info';
+            infoEl.className = 'flex-1 min-w-0';
 
-            const nameEl = document.createElement('span');
-            nameEl.className = 'model-item-name';
+            const nameEl = document.createElement('div');
+            nameEl.className = 'text-sm font-semibold text-white break-words';
             nameEl.textContent = model.name;
 
-            const sizeEl = document.createElement('span');
-            sizeEl.className = 'model-item-size';
+            const sizeEl = document.createElement('div');
+            sizeEl.className = 'text-xs text-slate-400 font-medium mt-1';
             const sizeText = model.size ? this.formatBytes(model.size) : '크기 불명';
             sizeEl.textContent = sizeText;
 
@@ -415,10 +419,10 @@ class OllamaChat {
             infoEl.appendChild(sizeEl);
 
             const actionsEl = document.createElement('div');
-            actionsEl.className = 'model-item-actions';
+            actionsEl.className = 'flex-shrink-0 ml-4';
 
             const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'btn-delete';
+            deleteBtn.className = 'px-3 py-1 text-xs font-semibold text-red-400 border border-red-600 rounded hover:bg-red-600 hover:text-white transition';
             deleteBtn.textContent = '삭제';
             deleteBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -558,17 +562,22 @@ class OllamaChat {
         const container = document.getElementById('chat-container');
 
         if (this.messages.length === 0) {
-            container.innerHTML = '<div class="empty-state"><p>모델을 선택하고 메시지를 입력해주세요</p></div>';
+            container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500"><p class="text-center">모델을 선택하고 메시지를 입력해주세요</p></div>';
             return;
         }
 
         container.innerHTML = '';
         this.messages.forEach(msg => {
             const messageEl = document.createElement('div');
-            messageEl.className = `message ${msg.role}`;
+            const isUser = msg.role === 'user';
+            messageEl.className = `flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`;
 
             const contentEl = document.createElement('div');
-            contentEl.className = 'message-content';
+            contentEl.className = `max-w-2xl px-4 py-3 rounded-lg ${
+                isUser
+                    ? 'bg-blue-600 text-white rounded-br-none'
+                    : 'bg-slate-800 border border-slate-700 text-slate-100 rounded-bl-none'
+            }`;
 
             // AI 응답은 마크다운으로 렌더링, 사용자 입력은 그대로 표시
             if (msg.role === 'assistant') {
@@ -582,8 +591,9 @@ class OllamaChat {
             // 이미지가 있으면 표시 (사용자 메시지만)
             if (msg.images && msg.role === 'user') {
                 const imageEl = document.createElement('div');
-                imageEl.className = 'message-image';
+                imageEl.className = 'mt-2';
                 const img = document.createElement('img');
+                img.className = 'max-w-xs max-h-80 rounded-lg border border-blue-500';
                 img.src = 'data:image/jpeg;base64,' + msg.images[0];
                 imageEl.appendChild(img);
                 messageEl.appendChild(imageEl);

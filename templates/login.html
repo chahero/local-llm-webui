@@ -4,431 +4,121 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>로그인 - Local LLM WebUI</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary-color: #3b82f6;
-            --primary-hover: #2563eb;
-            --bg-primary: #1f2937;
-            --bg-secondary: #111827;
-            --text-primary: #f3f4f6;
-            --text-secondary: #d1d5db;
-            --border-color: #374151;
-            --error-color: #ef4444;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-secondary);
-            color: var(--text-primary);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        .login-container {
-            width: 100%;
-            max-width: 400px;
-            padding: 2rem;
-        }
-
-        .login-box {
-            background-color: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 0.75rem;
-            padding: 2rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        .login-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .login-header h1 {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .login-header p {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            font-size: 0.875rem;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 0.375rem;
-            color: var(--text-primary);
-            font-size: 0.875rem;
-            transition: all 0.2s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .form-group input::placeholder {
-            color: var(--text-secondary);
-            opacity: 0.7;
-        }
-
-        .login-btn {
-            width: 100%;
-            padding: 0.75rem;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 0.375rem;
-            font-weight: 500;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .login-btn:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .login-btn:active {
-            transform: scale(0.98);
-        }
-
-        .login-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .message {
-            margin-top: 1rem;
-            padding: 0.75rem;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            text-align: center;
-            display: none;
-        }
-
-        .message.error {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: #fca5a5;
-            border: 1px solid var(--error-color);
-        }
-
-        .message.success {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: #86efac;
-            border: 1px solid #10b981;
-        }
-
-        .register-link {
-            text-align: center;
-            margin-top: 1.5rem;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        .register-link a {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .register-link a:hover {
-            text-decoration: underline;
-        }
-
-        /* 모달 오버레이 */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-            animation: fadeIn 0.2s ease-in;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* 회원가입 모달 */
-        .modal-content {
-            background-color: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 0.75rem;
-            padding: 2rem;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: slideUp 0.3s ease-out;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-header h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0;
-            width: 2rem;
-            height: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: color 0.2s;
-        }
-
-        .modal-close:hover {
-            color: var(--text-primary);
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-        }
-
-        .modal-buttons button {
-            flex: 1;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 0.375rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .modal-buttons .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .modal-buttons .btn-primary:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .modal-buttons .btn-secondary {
-            background-color: var(--border-color);
-            color: var(--text-primary);
-        }
-
-        .modal-buttons .btn-secondary:hover {
-            background-color: rgba(59, 130, 246, 0.3);
-        }
-
-        /* 토스트 컨테이너 */
-        .toast-container {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 10000;
-            pointer-events: none;
-        }
-
-        .toast {
-            background-color: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            padding: 1rem 1.5rem;
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.875rem;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.3s ease-out;
-            pointer-events: auto;
-            min-width: 300px;
-        }
-
-        .toast.success {
-            border-color: #10b981;
-            color: #86efac;
-        }
-
-        .toast.error {
-            border-color: var(--error-color);
-            color: #fca5a5;
-        }
-
-        .toast.info {
-            border-color: var(--primary-color);
-            color: #93c5fd;
-        }
-
-        .toast-icon {
-            font-size: 1.25rem;
-            flex-shrink: 0;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#0f172a',
+                            900: '#0f172a',
+                            925: '#06111f'
+                        }
+                    }
+                }
             }
         }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-    </style>
+    </script>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
     <!-- 토스트 컨테이너 -->
-    <div class="toast-container" id="toast-container"></div>
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <!-- 회원가입 모달 -->
-    <div class="modal-overlay" id="register-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>회원가입</h2>
-                <button class="modal-close" id="modal-close">&times;</button>
+    <div id="register-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-40 p-4">
+        <div class="bg-slate-900 rounded-xl shadow-2xl w-full max-w-sm border border-slate-700 animate-in fade-in zoom-in-95">
+            <div class="flex justify-between items-center p-6 border-b border-slate-700">
+                <h2 class="text-xl font-bold text-white">회원가입</h2>
+                <button id="modal-close" class="text-slate-400 hover:text-slate-200 text-2xl leading-none transition">&times;</button>
             </div>
-            <form id="register-form">
-                <div class="form-group">
-                    <label for="reg-username">사용자명</label>
+
+            <form id="register-form" class="p-6 space-y-4">
+                <div>
+                    <label for="reg-username" class="block text-sm font-medium text-slate-300 mb-2">사용자명</label>
                     <input
                         type="text"
                         id="reg-username"
-                        name="username"
                         placeholder="사용자명을 입력해주세요"
                         required
+                        class="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
                     >
                 </div>
 
-                <div class="form-group">
-                    <label for="reg-password">비밀번호</label>
+                <div>
+                    <label for="reg-password" class="block text-sm font-medium text-slate-300 mb-2">비밀번호</label>
                     <input
                         type="password"
                         id="reg-password"
-                        name="password"
                         placeholder="비밀번호를 입력해주세요 (최소 4자)"
                         required
                         minlength="4"
+                        class="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
                     >
                 </div>
 
-                <div class="modal-buttons">
-                    <button type="submit" class="btn-primary">가입하기</button>
-                    <button type="button" class="btn-secondary" id="modal-cancel">취소</button>
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition">가입하기</button>
+                    <button type="button" id="modal-cancel" class="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium rounded-lg transition">취소</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="login-container">
-        <div class="login-box">
-            <div class="login-header">
-                <h1>Local LLM WebUI</h1>
-                <p>로그인 해주세요</p>
+    <!-- 로그인 박스 -->
+    <div class="w-full max-w-sm">
+        <div class="bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 p-8">
+            <!-- 헤더 -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-white mb-2">Local LLM WebUI</h1>
+                <p class="text-slate-400">로그인 해주세요</p>
             </div>
 
-            <form id="login-form">
-                <div class="form-group">
-                    <label for="username">사용자명</label>
+            <!-- 로그인 폼 -->
+            <form id="login-form" class="space-y-5">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-slate-300 mb-2">사용자명</label>
                     <input
                         type="text"
                         id="username"
-                        name="username"
                         placeholder="사용자명을 입력해주세요"
                         required
                         autocomplete="username"
+                        class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
                     >
                 </div>
 
-                <div class="form-group">
-                    <label for="password">비밀번호</label>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-300 mb-2">비밀번호</label>
                     <input
                         type="password"
                         id="password"
-                        name="password"
                         placeholder="비밀번호를 입력해주세요"
                         required
                         autocomplete="current-password"
+                        class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
                     >
                 </div>
 
-                <button type="submit" class="login-btn" id="login-btn">로그인</button>
-
-                <div class="message" id="message"></div>
+                <button type="submit" id="login-btn" class="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition active:scale-95">로그인</button>
             </form>
 
-            <div class="register-link">
-                새로운 계정을 만들려면? <a href="#" id="register-link">가입하기</a>
+            <!-- 회원가입 링크 -->
+            <div class="mt-6 pt-6 border-t border-slate-700 text-center text-sm text-slate-400">
+                새로운 계정을 만들려면?
+                <a href="#" id="register-link" class="text-blue-500 hover:text-blue-400 font-medium transition">가입하기</a>
             </div>
         </div>
     </div>
 
     <script>
-        // 로그인 폼
+        // 요소들
         const form = document.getElementById('login-form');
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
         const loginBtn = document.getElementById('login-btn');
-        const messageEl = document.getElementById('message');
         const registerLink = document.getElementById('register-link');
 
-        // 모달
         const registerModal = document.getElementById('register-modal');
         const registerForm = document.getElementById('register-form');
         const regUsernameInput = document.getElementById('reg-username');
@@ -436,6 +126,7 @@
         const modalClose = document.getElementById('modal-close');
         const modalCancel = document.getElementById('modal-cancel');
 
+        // 이벤트 리스너
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             await login();
@@ -460,16 +151,18 @@
             }
         });
 
+        // 모달 함수
         function openRegisterModal() {
-            registerModal.classList.add('active');
+            registerModal.classList.remove('hidden');
             regUsernameInput.focus();
         }
 
         function closeRegisterModal() {
-            registerModal.classList.remove('active');
+            registerModal.classList.add('hidden');
             registerForm.reset();
         }
 
+        // 로그인
         async function login() {
             const username = usernameInput.value.trim();
             const password = passwordInput.value;
@@ -485,13 +178,8 @@
             try {
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: username,
-                        password: password
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
                 });
 
                 const data = await response.json();
@@ -513,6 +201,7 @@
             }
         }
 
+        // 회원가입
         async function registerUser() {
             const username = regUsernameInput.value.trim();
             const password = regPasswordInput.value;
@@ -530,19 +219,14 @@
             try {
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: username,
-                        password: password
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast('가입 성공!', 'success');
+                    showToast('가입 성공! 로그인해주세요', 'success');
                     closeRegisterModal();
                     usernameInput.value = username;
                     passwordInput.value = '';
@@ -556,10 +240,16 @@
             }
         }
 
+        // 토스트
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
+
+            const styles = {
+                success: 'bg-emerald-900 border-emerald-700 text-emerald-100',
+                error: 'bg-red-900 border-red-700 text-red-100',
+                info: 'bg-blue-900 border-blue-700 text-blue-100'
+            };
 
             const icons = {
                 success: '✓',
@@ -567,16 +257,17 @@
                 info: 'ℹ'
             };
 
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg border ${styles[type]} shadow-lg animate-in fade-in slide-in-from-right-full duration-300`;
             toast.innerHTML = `
-                <span class="toast-icon">${icons[type]}</span>
-                <span>${message}</span>
+                <span class="text-lg font-bold flex-shrink-0">${icons[type]}</span>
+                <span class="flex-1">${message}</span>
             `;
 
             container.appendChild(toast);
 
-            // 3초 후 자동 제거
             setTimeout(() => {
-                toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                toast.classList.remove('fade-in', 'slide-in-from-right-full');
+                toast.classList.add('fade-out', 'slide-out-to-right-full');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Local LLM WebUI</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- 코드 하이라이팅 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -16,112 +16,121 @@
     <!-- XSS 방지 -->
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Local LLM WebUI</h1>
-            <div class="header-right">
-                <button id="models-btn" class="btn btn-primary">⚙️ 모델 관리</button>
-                <div id="status" class="status disconnected">
-                    <span class="indicator"></span>
-                    <span id="status-text">Ollama 연결 확인 중...</span>
+<body class="bg-slate-950 text-slate-100 overflow-hidden">
+    <!-- 토스트 컨테이너 -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <div class="flex flex-col h-screen">
+        <!-- 헤더 -->
+        <header class="bg-slate-900 border-b border-slate-700 px-6 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-white">Local LLM WebUI</h1>
+                <div class="flex items-center gap-4">
+                    <button id="models-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition">⚙️ 모델 관리</button>
+
+                    <div id="status" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-700">
+                        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                        <span id="status-text" class="text-sm text-slate-300">Ollama 연결 확인 중...</span>
+                    </div>
+
+                    <div class="flex items-center gap-2 text-sm text-slate-400 border-l border-slate-700 pl-4">
+                        <span>사용자:</span>
+                        <strong id="username-display" class="text-slate-100">-</strong>
+                    </div>
+
+                    <button id="logout-btn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium rounded-lg transition text-sm">로그아웃</button>
                 </div>
-                <span id="user-info" style="color: var(--text-secondary); font-size: 0.875rem; margin-left: 1rem;">
-                    사용자: <strong id="username-display">-</strong>
-                </span>
-                <button id="logout-btn" class="btn btn-secondary" title="로그아웃">로그아웃</button>
             </div>
         </header>
 
-        <main>
-            <div class="chat-area">
-                <div class="model-selector">
-                    <label for="model-select">모델 선택:</label>
-                    <select id="model-select" class="model-select">
+        <!-- 메인 콘텐츠 -->
+        <main class="flex-1 overflow-hidden flex flex-col">
+            <!-- 모델 선택 -->
+            <div class="bg-slate-900 border-b border-slate-700 px-6 py-4 flex-shrink-0">
+                <div class="flex items-center gap-4">
+                    <label for="model-select" class="font-medium text-slate-300">모델 선택:</label>
+                    <select id="model-select" class="flex-1 max-w-xs px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-blue-500 transition">
                         <option value="">모델을 선택해주세요</option>
                     </select>
                 </div>
+            </div>
 
-                <div id="chat-container" class="chat-container">
-                    <div class="empty-state">
-                        <p>모델을 선택하고 메시지를 입력해주세요</p>
+            <!-- 채팅 영역 -->
+            <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-4">
+                <div class="flex items-center justify-center h-full text-slate-500">
+                    <p class="text-center">모델을 선택하고 메시지를 입력해주세요</p>
+                </div>
+            </div>
+
+            <!-- 입력 영역 -->
+            <div class="bg-slate-900 border-t border-slate-700 p-6 flex-shrink-0 max-h-80 overflow-y-auto">
+                <!-- 이미지 미리보기 -->
+                <div id="image-preview-container" class="hidden mb-4 pb-4 border-b border-slate-700">
+                    <div class="relative inline-block">
+                        <img id="image-preview" class="max-w-xs max-h-40 rounded-lg border border-slate-700" alt="Preview">
+                        <button id="remove-image-btn" class="absolute -top-2 -right-2 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center transition text-sm font-bold">✕</button>
                     </div>
                 </div>
 
-                <div class="input-area">
-                    <!-- 이미지 미리보기 -->
-                    <div id="image-preview-container" class="image-preview-container" style="display: none;">
-                        <div class="image-preview-wrapper">
-                            <img id="image-preview" class="image-preview" alt="Preview">
-                            <button id="remove-image-btn" class="remove-image-btn">✕</button>
-                        </div>
-                    </div>
+                <!-- 입력 필드 -->
+                <div class="space-y-3">
+                    <textarea
+                        id="message-input"
+                        placeholder="메시지를 입력해주세요... (Shift+Enter: 줄바꿈, Enter: 전송)"
+                        rows="3"
+                        class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition resize-none"
+                    ></textarea>
 
-                    <div class="input-group">
-                        <textarea
-                            id="message-input"
-                            placeholder="메시지를 입력해주세요... (이미지 드래그/붙여넣기 가능)"
-                            rows="3"
-                            class="message-input"
-                        ></textarea>
-                        <div class="input-actions">
-                            <button id="image-upload-btn" class="btn btn-secondary" title="이미지 업로드">🖼️</button>
-                            <button id="send-btn" class="btn btn-primary send-btn">전송</button>
-                        </div>
+                    <div class="flex gap-2">
+                        <button id="image-upload-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium rounded-lg transition" title="이미지 업로드">🖼️</button>
+                        <button id="send-btn" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition active:scale-95">전송</button>
                     </div>
-
-                    <!-- 숨겨진 파일 입력 -->
-                    <input
-                        type="file"
-                        id="image-input"
-                        accept="image/*"
-                        style="display: none;"
-                    >
                 </div>
+
+                <input type="file" id="image-input" accept="image/*" class="hidden">
             </div>
         </main>
     </div>
 
     <!-- 모델 관리 모달 -->
-    <div id="models-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header" id="modal-header">
-                <h2>모델 관리</h2>
-                <button id="close-modal-btn" class="close-btn">&times;</button>
+    <div id="models-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-40 p-4">
+        <div class="bg-slate-900 rounded-xl shadow-2xl w-full max-w-2xl border border-slate-700 flex flex-col max-h-[80vh] animate-in fade-in zoom-in-95">
+            <!-- 모달 헤더 -->
+            <div class="flex justify-between items-center p-6 border-b border-slate-700 cursor-move" id="modal-header">
+                <h2 class="text-xl font-bold text-white">모델 관리</h2>
+                <button id="close-modal-btn" class="text-slate-400 hover:text-slate-200 text-2xl leading-none transition">&times;</button>
             </div>
 
-            <div class="modal-body">
+            <!-- 모달 본문 -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-6">
                 <!-- 설치된 모델 -->
-                <div class="modal-section">
-                    <h3>📦 설치된 모델</h3>
-                    <div id="models-list" class="models-list">
-                        <p class="loading">로딩 중...</p>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">📦 설치된 모델</h3>
+                    <div id="models-list" class="space-y-2">
+                        <p class="text-center text-slate-400 py-4">로딩 중...</p>
                     </div>
                 </div>
 
                 <!-- 모델 다운로드 -->
-                <div class="modal-section">
-                    <h3>⬇️ 모델 다운로드</h3>
-                    <div class="input-group">
+                <div class="border-t border-slate-700 pt-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">⬇️ 모델 다운로드</h3>
+                    <div class="flex gap-2">
                         <input
                             type="text"
                             id="model-name-input"
                             placeholder="예: llama2, mistral, neural-chat"
-                            class="modal-input"
+                            class="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
                         >
-                        <button id="pull-btn" class="btn btn-primary">다운로드</button>
+                        <button id="pull-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition">다운로드</button>
                     </div>
-                    <div id="pull-status" class="status-message"></div>
+                    <div id="pull-status" class="mt-2 text-sm"></div>
                 </div>
             </div>
-
-            <!-- Resize handle -->
-            <div id="resize-handle" class="resize-handle"></div>
         </div>
     </div>
 
-    <!-- 모달 백그라운드 -->
-    <div id="modal-overlay" class="modal-overlay"></div>
+    <!-- 모달 오버레이 -->
+    <div id="modal-overlay" class="hidden fixed inset-0 bg-black/50 z-30"></div>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
