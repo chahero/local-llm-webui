@@ -158,9 +158,224 @@
         .register-link a:hover {
             text-decoration: underline;
         }
+
+        /* 모달 오버레이 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            animation: fadeIn 0.2s ease-in;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 회원가입 모달 */
+        .modal-content {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-buttons .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .modal-buttons .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .modal-buttons .btn-secondary {
+            background-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .modal-buttons .btn-secondary:hover {
+            background-color: rgba(59, 130, 246, 0.3);
+        }
+
+        /* 토스트 컨테이너 */
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        .toast {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1rem 1.5rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+            pointer-events: auto;
+            min-width: 300px;
+        }
+
+        .toast.success {
+            border-color: #10b981;
+            color: #86efac;
+        }
+
+        .toast.error {
+            border-color: var(--error-color);
+            color: #fca5a5;
+        }
+
+        .toast.info {
+            border-color: var(--primary-color);
+            color: #93c5fd;
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- 토스트 컨테이너 -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- 회원가입 모달 -->
+    <div class="modal-overlay" id="register-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>회원가입</h2>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="reg-username">사용자명</label>
+                    <input
+                        type="text"
+                        id="reg-username"
+                        name="username"
+                        placeholder="사용자명을 입력해주세요"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-password">비밀번호</label>
+                    <input
+                        type="password"
+                        id="reg-password"
+                        name="password"
+                        placeholder="비밀번호를 입력해주세요 (최소 4자)"
+                        required
+                        minlength="4"
+                    >
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-primary">가입하기</button>
+                    <button type="button" class="btn-secondary" id="modal-cancel">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="login-container">
         <div class="login-box">
             <div class="login-header">
@@ -205,12 +420,21 @@
     </div>
 
     <script>
+        // 로그인 폼
         const form = document.getElementById('login-form');
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
         const loginBtn = document.getElementById('login-btn');
         const messageEl = document.getElementById('message');
         const registerLink = document.getElementById('register-link');
+
+        // 모달
+        const registerModal = document.getElementById('register-modal');
+        const registerForm = document.getElementById('register-form');
+        const regUsernameInput = document.getElementById('reg-username');
+        const regPasswordInput = document.getElementById('reg-password');
+        const modalClose = document.getElementById('modal-close');
+        const modalCancel = document.getElementById('modal-cancel');
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -219,15 +443,39 @@
 
         registerLink.addEventListener('click', (e) => {
             e.preventDefault();
-            showRegisterForm();
+            openRegisterModal();
         });
+
+        modalClose.addEventListener('click', closeRegisterModal);
+        modalCancel.addEventListener('click', closeRegisterModal);
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await registerUser();
+        });
+
+        registerModal.addEventListener('click', (e) => {
+            if (e.target === registerModal) {
+                closeRegisterModal();
+            }
+        });
+
+        function openRegisterModal() {
+            registerModal.classList.add('active');
+            regUsernameInput.focus();
+        }
+
+        function closeRegisterModal() {
+            registerModal.classList.remove('active');
+            registerForm.reset();
+        }
 
         async function login() {
             const username = usernameInput.value.trim();
             const password = passwordInput.value;
 
             if (!username || !password) {
-                showMessage('사용자명과 비밀번호를 입력해주세요', 'error');
+                showToast('사용자명과 비밀번호를 입력해주세요', 'error');
                 return;
             }
 
@@ -249,39 +497,36 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessage('로그인 성공! 이동 중...', 'success');
+                    showToast('로그인 성공!', 'success');
                     setTimeout(() => {
                         window.location.href = '/';
                     }, 500);
                 } else {
-                    showMessage(data.message || '로그인 실패', 'error');
+                    showToast(data.message || '로그인 실패', 'error');
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                showMessage('로그인 중 오류가 발생했습니다', 'error');
+                showToast('로그인 중 오류가 발생했습니다', 'error');
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.textContent = '로그인';
             }
         }
 
-        function showMessage(text, type) {
-            messageEl.textContent = text;
-            messageEl.className = `message ${type}`;
-            messageEl.style.display = 'block';
-        }
+        async function registerUser() {
+            const username = regUsernameInput.value.trim();
+            const password = regPasswordInput.value;
 
-        function showRegisterForm() {
-            const username = prompt('사용자명을 입력해주세요:');
-            if (!username) return;
+            if (!username || !password) {
+                showToast('사용자명과 비밀번호를 입력해주세요', 'error');
+                return;
+            }
 
-            const password = prompt('비밀번호를 입력해주세요 (최소 4자):');
-            if (!password) return;
+            if (password.length < 4) {
+                showToast('비밀번호는 최소 4자 이상이어야 합니다', 'error');
+                return;
+            }
 
-            registerUser(username, password);
-        }
-
-        async function registerUser(username, password) {
             try {
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
@@ -297,17 +542,43 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessage('가입 성공! 이제 로그인해주세요', 'success');
+                    showToast('가입 성공!', 'success');
+                    closeRegisterModal();
                     usernameInput.value = username;
                     passwordInput.value = '';
                     passwordInput.focus();
                 } else {
-                    showMessage(data.message || '가입 실패', 'error');
+                    showToast(data.message || '가입 실패', 'error');
                 }
             } catch (error) {
                 console.error('Register error:', error);
-                showMessage('가입 중 오류가 발생했습니다', 'error');
+                showToast('가입 중 오류가 발생했습니다', 'error');
             }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icons = {
+                success: '✓',
+                error: '✕',
+                info: 'ℹ'
+            };
+
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            // 3초 후 자동 제거
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
     </script>
 </body>
