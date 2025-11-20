@@ -8,6 +8,10 @@ A modern web-based LLM interface that integrates with Ollama. Designed to make i
 
 - **💬 Real-time Streaming Chat** - Real-time conversation support with Ollama models
 - **🔐 User Authentication** - Sign up/Login with SQLite database (bcrypt password hashing)
+- **💾 Conversation History** - Save, load, rename, and delete conversations
+- **📊 Message Storage** - Store all messages, images, and metrics in database
+- **🤖 Model Tracking** - Use multiple models in one conversation, track which model generated each response
+- **⚡ Performance Metrics** - Display token speed, generation time, prompt processing time, and model load time
 - **📦 Model Management** - Install, delete, and download models
 - **🖼️ Image Upload** - Send images with messages (drag and drop support)
 - **📝 Markdown Rendering** - Display AI responses as markdown
@@ -121,8 +125,16 @@ local-llm-webui/
 - `GET /api/health` - Check Ollama server status (login required)
 - `GET /api/models` - List models (login required)
 - `POST /api/chat` - Chat with streaming (login required)
+- `POST /api/save-message` - Save AI response message (login required)
 - `POST /api/pull` - Download model (login required)
 - `POST /api/delete` - Delete model (login required)
+
+### Conversation History
+- `GET /api/conversations` - Get all user conversations (login required)
+- `POST /api/conversations` - Create new conversation (login required)
+- `GET /api/conversations/{id}` - Get specific conversation with messages (login required)
+- `PUT /api/conversations/{id}/title` - Update conversation title (login required)
+- `DELETE /api/conversations/{id}` - Delete conversation (soft delete, login required)
 
 ## ⚙️ Configuration Options
 
@@ -191,6 +203,14 @@ The server will automatically restart when you modify Python files.
 
 ## 📝 Changelog
 
+### v1.1.0
+- **Conversation History** - Save, load, rename, and delete conversations
+- **Message Storage** - Store all messages, images, and metrics in database
+- **Model Tracking** - Track which model generated each response in multi-model conversations
+- **Performance Metrics** - Display token speed, generation time, prompt processing time, and model load time
+- **UI Improvements** - Beautiful gradient-styled delete button
+- **UX Enhancements** - Integrated model information with metrics display
+
 ### v1.0.0
 - UI redesign with Tailwind CSS
 - Login/authentication system added
@@ -211,7 +231,16 @@ Please report bugs or suggest features through issues.
 A: Go to Model Management → Download Model and enter the model name. It will install automatically. (e.g., llama2, mistral)
 
 **Q: Does it support multiple users?**
-A: Yes, each user can log in with their own account.
+A: Yes, each user can log in with their own account. Each user's conversation history and messages are managed separately.
+
+**Q: Can I use multiple models in one conversation?**
+A: Yes! You can switch models within the same conversation. Each AI response automatically records which model was used, so you can compare responses from different models.
+
+**Q: Can I view previous conversations?**
+A: Yes, click on any conversation in the left sidebar to load the full message history. Conversations are automatically sorted by date.
+
+**Q: Where can I see performance information?**
+A: Performance metrics are displayed below each AI response, including token speed, generation time, prompt processing time, and model load time.
 
 **Q: Can I deploy to a remote server?**
 A: Yes, but production configuration is required. It's recommended to change `SECRET_KEY` and set up HTTPS.
@@ -222,4 +251,4 @@ A: Beginner: llama2, mistral / Advanced: neural-chat, orca-mini
 ---
 
 **Created**: November 2025
-**Version**: 1.0.0
+**Version**: 1.1.0
