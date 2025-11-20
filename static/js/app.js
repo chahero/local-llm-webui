@@ -227,13 +227,15 @@ class OllamaChat {
     }
 
     openModal() {
-        document.getElementById('models-modal').classList.add('active');
-        document.getElementById('modal-overlay').classList.add('active');
+        document.getElementById('models-modal').classList.remove('hidden');
+        document.getElementById('modal-overlay').classList.remove('hidden');
+        // 모달 내용 로드
+        this.loadModels();
     }
 
     closeModal() {
-        document.getElementById('models-modal').classList.remove('active');
-        document.getElementById('modal-overlay').classList.remove('active');
+        document.getElementById('models-modal').classList.add('hidden');
+        document.getElementById('modal-overlay').classList.add('hidden');
     }
 
     handleImageUpload(e) {
@@ -576,8 +578,8 @@ class OllamaChat {
             actionsEl.className = 'flex-shrink-0 ml-4';
 
             const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'px-3 py-1 text-xs font-semibold text-red-400 border border-red-600 rounded hover:bg-red-600 hover:text-white transition';
-            deleteBtn.textContent = '삭제';
+            deleteBtn.className = 'px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 rounded-lg hover:from-red-700 hover:to-red-800 transition duration-200 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg';
+            deleteBtn.textContent = '🗑️ 삭제';
             deleteBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.deleteModel(model.name);
@@ -687,6 +689,7 @@ class OllamaChat {
             // 어시스턴트 메시지를 미리 추가
             this.messages.push(assistantMessage);
 
+            let finalData = null;
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -698,6 +701,15 @@ class OllamaChat {
                     if (line.trim()) {
                         try {
                             const data = JSON.parse(line);
+
+                            // 최종 응답 신호 확인
+                            if (data.done && data.full_content) {
+                                finalData = data;
+                                assistantMessage.content = data.full_content;
+                                assistantMessage.metrics = data.metrics;
+                                continue;
+                            }
+
                             if (data.success && data.chunk) {
                                 fullContent += data.chunk;
                                 // 실시간으로 메시지 업데이트
@@ -705,7 +717,7 @@ class OllamaChat {
                                 this.updateChatDisplay();
                             }
                             // 메트릭 정보 저장 (done이 true일 때)
-                            if (data.metrics) {
+                            if (data.metrics && !data.full_content) {
                                 assistantMessage.metrics = data.metrics;
                             }
                         } catch (e) {
@@ -717,6 +729,26 @@ class OllamaChat {
 
             // 최종 업데이트
             this.updateChatDisplay();
+
+            // AI 응답을 서버에 저장
+            if (finalData && this.currentConversation) {
+                try {
+                    await fetch('/api/save-message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            conversation_id: this.currentConversation.id,
+                            content: finalData.full_content,
+                            metrics: finalData.metrics,
+                            model: this.currentModel
+                        })
+                    });
+                } catch (error) {
+                    console.error('Failed to save message:', error);
+                }
+            }
         } catch (error) {
             console.error('Error sending message:', error);
             this.messages.push({
@@ -894,6 +926,7 @@ class OllamaChat {
 }
 
 // Initialize when DOM is ready
+let chat;
 document.addEventListener('DOMContentLoaded', () => {
-    new OllamaChat();
+    chat = new OllamaChat();
 });

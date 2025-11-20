@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, Response, session
+from flask import Blueprint, request, jsonify, Response, session, current_app
 from utils.ollama_client import OllamaClient
 from utils.decorators import login_required
 from models import db, Conversation, Message, User
@@ -39,6 +39,7 @@ def chat():
 
     # 대화 조회 및 권한 확인
     conversation = None
+    conv_id = None
     if conversation_id:
         conversation = Conversation.query.filter_by(
             id=conversation_id,
@@ -47,19 +48,22 @@ def chat():
         if not conversation:
             return jsonify({"success": False, "message": "대화를 찾을 수 없습니다"}), 404
 
+        # conversation.id를 미리 저장 (세션 종료 후 접근 방지)
+        conv_id = conversation.id
+
+    # 사용자 메시지 먼저 저장
+    if conversation and user_message:
+        user_msg = Message(
+            conversation_id=conv_id,
+            role='user',
+            content=user_message.get('content', ''),
+            image=user_message.get('image')
+        )
+        db.session.add(user_msg)
+        db.session.commit()
+
     def generate():
         """스트리밍 응답 생성"""
-        # 사용자 메시지 저장
-        if conversation and user_message:
-            user_msg = Message(
-                conversation_id=conversation.id,
-                role='user',
-                content=user_message.get('content', ''),
-                image=user_message.get('image')
-            )
-            db.session.add(user_msg)
-            db.session.commit()
-
         result = ollama.chat(model, messages, stream=True)
 
         if not result.get('success'):
@@ -91,7 +95,7 @@ def chat():
                             "done": chunk.get('done', False)
                         }
 
-                        # done이 true일 때 성능 메트릭 포함 및 저장
+                        # done이 true일 때 성능 메트릭 포함
                         if chunk.get('done', False):
                             metrics = {}
 
@@ -124,24 +128,63 @@ def chat():
                         continue
         except Exception as e:
             yield json.dumps({"success": False, "message": str(e)}) + '\n'
-        finally:
-            # AI 응답 저장
-            if conversation and full_content:
-                assistant_msg = Message(
-                    conversation_id=conversation.id,
-                    role='assistant',
-                    content=full_content,
-                    metrics=metrics if metrics else None
-                )
-                db.session.add(assistant_msg)
 
-                # 대화 업데이트 (마지막 사용 모델, 업데이트 시간)
-                conversation.model_used = model
-                conversation.updated_at = db.func.now()
-
-                db.session.commit()
+        # 최종 응답 완료 신호 (클라이언트에서 저장하도록)
+        yield json.dumps({
+            "success": True,
+            "done": True,
+            "full_content": full_content,
+            "metrics": metrics,
+            "conversation_id": conv_id,
+            "model": model
+        }) + '\n'
 
     return Response(generate(), mimetype='application/x-ndjson')
+
+@api_bp.route('/save-message', methods=['POST'])
+@login_required
+def save_message():
+    """AI 응답 메시지 저장 (클라이언트에서 호출)"""
+    data = request.json
+    conversation_id = data.get('conversation_id')
+    full_content = data.get('content', '')
+    metrics = data.get('metrics')
+    model = data.get('model')
+
+    try:
+        conversation = Conversation.query.filter_by(
+            id=conversation_id,
+            user_id=session.get('user_id')
+        ).first()
+
+        if not conversation:
+            return jsonify({"success": False, "message": "대화를 찾을 수 없습니다"}), 404
+
+        # AI 응답 저장
+        assistant_msg = Message(
+            conversation_id=conversation.id,
+            role='assistant',
+            content=full_content,
+            metrics=metrics if metrics else None
+        )
+        db.session.add(assistant_msg)
+
+        # 대화 업데이트
+        conversation.model_used = model
+        conversation.updated_at = db.func.now()
+
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "메시지가 저장되었습니다"
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"저장 실패: {str(e)}"
+        }), 500
 
 @api_bp.route('/pull', methods=['POST'])
 @login_required
