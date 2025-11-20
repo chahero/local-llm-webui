@@ -512,7 +512,8 @@ class OllamaChat {
             let fullContent = '';
             let assistantMessage = {
                 role: 'assistant',
-                content: ''
+                content: '',
+                metrics: null
             };
 
             // 어시스턴트 메시지를 미리 추가
@@ -534,6 +535,10 @@ class OllamaChat {
                                 // 실시간으로 메시지 업데이트
                                 assistantMessage.content = fullContent;
                                 this.updateChatDisplay();
+                            }
+                            // 메트릭 정보 저장 (done이 true일 때)
+                            if (data.metrics) {
+                                assistantMessage.metrics = data.metrics;
                             }
                         } catch (e) {
                             // JSON 파싱 에러는 무시
@@ -570,7 +575,7 @@ class OllamaChat {
         this.messages.forEach(msg => {
             const messageEl = document.createElement('div');
             const isUser = msg.role === 'user';
-            messageEl.className = `flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`;
+            messageEl.className = `flex flex-col ${isUser ? 'items-end' : 'items-start'} mb-4`;
 
             const contentEl = document.createElement('div');
             contentEl.className = `max-w-2xl px-4 py-3 rounded-lg ${
@@ -600,6 +605,34 @@ class OllamaChat {
             }
 
             container.appendChild(messageEl);
+
+            // 메트릭 정보 표시 (AI 응답만)
+            if (msg.role === 'assistant' && msg.metrics) {
+                const metricsEl = document.createElement('div');
+                metricsEl.className = 'flex justify-start mb-4 ml-0';
+
+                const metricContent = document.createElement('div');
+                metricContent.className = 'max-w-2xl px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-300 text-sm';
+
+                let metricsHTML = '<div class="space-y-1">';
+                if (msg.metrics.tokens_per_second) {
+                    metricsHTML += `<div><span class="font-semibold">⚡ 토큰 속도:</span> ${msg.metrics.tokens_per_second} tokens/sec</div>`;
+                }
+                if (msg.metrics.generation_time_sec) {
+                    metricsHTML += `<div><span class="font-semibold">⏱️ 생성 시간:</span> ${msg.metrics.generation_time_sec}s</div>`;
+                }
+                if (msg.metrics.prompt_processing_time_sec) {
+                    metricsHTML += `<div><span class="font-semibold">📥 프롬프트 처리:</span> ${msg.metrics.prompt_processing_time_sec}s</div>`;
+                }
+                if (msg.metrics.load_time_sec) {
+                    metricsHTML += `<div><span class="font-semibold">📦 모델 로드:</span> ${msg.metrics.load_time_sec}s</div>`;
+                }
+                metricsHTML += '</div>';
+
+                metricContent.innerHTML = metricsHTML;
+                metricsEl.appendChild(metricContent);
+                container.appendChild(metricsEl);
+            }
         });
 
         // Scroll to bottom

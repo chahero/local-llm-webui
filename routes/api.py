@@ -57,11 +57,42 @@ def chat():
                         message = chunk.get('message', {})
                         response_text = message.get('content', '')
 
-                        yield json.dumps({
+                        # 응답 데이터 구성
+                        response_data = {
                             "success": True,
                             "chunk": response_text,
                             "done": chunk.get('done', False)
-                        }) + '\n'
+                        }
+
+                        # done이 true일 때 성능 메트릭 포함
+                        if chunk.get('done', False):
+                            metrics = {}
+
+                            # 토큰 속도 계산 (tokens/sec)
+                            eval_count = chunk.get('eval_count', 0)
+                            eval_duration = chunk.get('eval_duration', 0)
+                            if eval_count > 0 and eval_duration > 0:
+                                tokens_per_sec = eval_count / (eval_duration / 1e9)
+                                metrics['tokens_per_second'] = round(tokens_per_sec, 2)
+
+                            # 생성 시간 (초)
+                            if eval_duration > 0:
+                                metrics['generation_time_sec'] = round(eval_duration / 1e9, 2)
+
+                            # 프롬프트 처리 시간 (초)
+                            prompt_eval_duration = chunk.get('prompt_eval_duration', 0)
+                            if prompt_eval_duration > 0:
+                                metrics['prompt_processing_time_sec'] = round(prompt_eval_duration / 1e9, 2)
+
+                            # 모델 로드 시간 (초)
+                            load_duration = chunk.get('load_duration', 0)
+                            if load_duration > 0:
+                                metrics['load_time_sec'] = round(load_duration / 1e9, 2)
+
+                            if metrics:
+                                response_data['metrics'] = metrics
+
+                        yield json.dumps(response_data) + '\n'
                     except json.JSONDecodeError as e:
                         continue
         except Exception as e:
