@@ -5,6 +5,8 @@ class OllamaChat {
         this.models = [];
         this.selectedImage = null;  // 선택된 이미지 저장
         this.currentUser = null;
+        this.conversations = [];  // 대화 목록
+        this.currentConversation = null;  // 현재 대화
         this.setupMarked();
         this.init();
     }
@@ -59,11 +61,15 @@ class OllamaChat {
         this.setupEventListeners();
         await this.checkConnection();
         await this.loadModels();
+        await this.loadConversations();  // 대화 목록 불러오기
     }
 
     setupEventListeners() {
         // 로그아웃
         document.getElementById('logout-btn').addEventListener('click', () => this.logout());
+
+        // 새 대화
+        document.getElementById('new-conversation-btn').addEventListener('click', () => this.createConversation());
 
         // 채팅
         document.getElementById('send-btn').addEventListener('click', () => this.sendMessage());
@@ -286,6 +292,146 @@ class OllamaChat {
         }
     }
 
+    // ============ 대화 이력 관련 메서드 ============
+
+    async loadConversations() {
+        """대화 목록 불러오기"""
+        try {
+            const response = await fetch('/api/conversations');
+            const data = await response.json();
+
+            if (data.success) {
+                this.conversations = data.conversations;
+                this.renderConversationsList();
+            }
+        } catch (error) {
+            console.error('Failed to load conversations:', error);
+        }
+    }
+
+    renderConversationsList() {
+        """대화 목록 UI 렌더링"""
+        const listContainer = document.getElementById('conversations-list');
+
+        if (this.conversations.length === 0) {
+            listContainer.innerHTML = '<div class="p-4 text-slate-400 text-sm text-center">대화가 없습니다</div>';
+            return;
+        }
+
+        // 날짜별로 그룹화
+        const grouped = {};
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        this.conversations.forEach(conv => {
+            const date = new Date(conv.created_at);
+            let group = '이전';
+
+            if (date.toDateString() === today.toDateString()) {
+                group = '오늘';
+            } else if (date.toDateString() === yesterday.toDateString()) {
+                group = '어제';
+            }
+
+            if (!grouped[group]) grouped[group] = [];
+            grouped[group].push(conv);
+        });
+
+        let html = '';
+        ['오늘', '어제', '이전'].forEach(group => {
+            if (grouped[group]) {
+                html += `<div class="px-4 py-2 text-xs font-semibold text-slate-400 sticky top-0 bg-slate-900">${group}</div>`;
+                grouped[group].forEach(conv => {
+                    const isSelected = this.currentConversation?.id === conv.id;
+                    html += `
+                        <div class="px-3 py-2 mx-2 rounded-lg cursor-pointer transition ${
+                            isSelected ? 'bg-blue-600 text-white' : 'hover:bg-slate-800 text-slate-300'
+                        }" onclick="chat.selectConversation(${conv.id})" title="${conv.title}">
+                            <div class="truncate text-sm font-medium">${conv.title}</div>
+                            <div class="text-xs ${isSelected ? 'text-blue-100' : 'text-slate-500'}">${conv.model_used || '모델 미정'}</div>
+                        </div>
+                    `;
+                });
+            }
+        });
+
+        listContainer.innerHTML = html;
+    }
+
+    async createConversation() {
+        """새 대화 생성"""
+        try {
+            const response = await fetch('/api/conversations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: '새로운 대화'
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                this.conversations.unshift(data.conversation);
+                this.selectConversation(data.conversation.id);
+                this.renderConversationsList();
+            }
+        } catch (error) {
+            console.error('Failed to create conversation:', error);
+        }
+    }
+
+    async selectConversation(conversationId) {
+        """대화 선택 및 로드"""
+        try {
+            const response = await fetch(`/api/conversations/${conversationId}`);
+            const data = await response.json();
+
+            if (data.success) {
+                this.currentConversation = data.conversation;
+                this.messages = data.conversation.messages || [];
+                this.currentModel = data.conversation.model_used || '';
+
+                // 모델 선택 업데이트
+                document.getElementById('model-select').value = this.currentModel;
+
+                this.updateChatDisplay();
+                this.renderConversationsList();
+            }
+        } catch (error) {
+            console.error('Failed to load conversation:', error);
+        }
+    }
+
+    async deleteConversation(conversationId) {
+        """대화 삭제"""
+        if (!confirm('이 대화를 삭제하시겠습니까?')) return;
+
+        try {
+            const response = await fetch(`/api/conversations/${conversationId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                this.conversations = this.conversations.filter(c => c.id !== conversationId);
+                if (this.currentConversation?.id === conversationId) {
+                    this.currentConversation = null;
+                    this.messages = [];
+                    this.updateChatDisplay();
+                }
+                this.renderConversationsList();
+            }
+        } catch (error) {
+            console.error('Failed to delete conversation:', error);
+        }
+    }
+
     async logout() {
         // 로그아웃
         try {
@@ -452,6 +598,12 @@ class OllamaChat {
             return;
         }
 
+        // 대화가 없으면 새로 생성
+        if (!this.currentConversation) {
+            await this.createConversation();
+            return; // 대화 생성 후 다시 sendMessage 호출
+        }
+
         // 사용자 메시지 객체 생성
         const userMessage = {
             role: 'user',
@@ -491,6 +643,12 @@ class OllamaChat {
                 };
             });
 
+            // 저장할 사용자 메시지 (이미지는 base64로 저장)
+            const userMessageToSave = {
+                content: message || '(이미지만 첨부됨)',
+                image: this.selectedImage ? this.selectedImage.split(',')[1] : null
+            };
+
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
@@ -498,7 +656,9 @@ class OllamaChat {
                 },
                 body: JSON.stringify({
                     model: this.currentModel,
-                    messages: messagesForAPI
+                    messages: messagesForAPI,
+                    conversation_id: this.currentConversation.id,
+                    user_message: userMessageToSave
                 })
             });
 

@@ -44,50 +44,68 @@
         </header>
 
         <!-- 메인 콘텐츠 -->
-        <main class="flex-1 overflow-hidden flex flex-col">
-            <!-- 모델 선택 -->
-            <div class="bg-slate-900 border-b border-slate-700 px-6 py-4 flex-shrink-0">
-                <div class="flex items-center gap-4">
-                    <label for="model-select" class="font-medium text-slate-300">모델 선택:</label>
-                    <select id="model-select" class="flex-1 max-w-xs px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-blue-500 transition">
-                        <option value="">모델을 선택해주세요</option>
-                    </select>
+        <main class="flex-1 overflow-hidden flex">
+            <!-- 좌측 사이드바 - 대화 목록 -->
+            <aside class="w-64 bg-slate-900 border-r border-slate-700 flex flex-col flex-shrink-0">
+                <!-- 새 대화 버튼 -->
+                <div class="p-4 border-b border-slate-700 flex-shrink-0">
+                    <button id="new-conversation-btn" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition text-sm">+ 새 대화</button>
                 </div>
-            </div>
 
-            <!-- 채팅 영역 -->
-            <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-4">
-                <div class="flex items-center justify-center h-full text-slate-500">
-                    <p class="text-center">모델을 선택하고 메시지를 입력해주세요</p>
+                <!-- 대화 목록 -->
+                <div id="conversations-list" class="flex-1 overflow-y-auto">
+                    <div class="p-4 text-slate-400 text-sm text-center">
+                        대화 목록을 불러오는 중...
+                    </div>
                 </div>
-            </div>
+            </aside>
 
-            <!-- 입력 영역 -->
-            <div class="bg-slate-900 border-t border-slate-700 p-6 flex-shrink-0 max-h-80 overflow-y-auto">
-                <!-- 이미지 미리보기 -->
-                <div id="image-preview-container" class="hidden mb-4 pb-4 border-b border-slate-700">
-                    <div class="relative inline-block">
-                        <img id="image-preview" class="max-w-xs max-h-40 rounded-lg border border-slate-700" alt="Preview">
-                        <button id="remove-image-btn" class="absolute -top-2 -right-2 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center transition text-sm font-bold">✕</button>
+            <!-- 우측 채팅 영역 -->
+            <div class="flex-1 overflow-hidden flex flex-col">
+                <!-- 모델 선택 -->
+                <div class="bg-slate-900 border-b border-slate-700 px-6 py-4 flex-shrink-0">
+                    <div class="flex items-center gap-4">
+                        <label for="model-select" class="font-medium text-slate-300">모델 선택:</label>
+                        <select id="model-select" class="flex-1 max-w-xs px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                            <option value="">모델을 선택해주세요</option>
+                        </select>
                     </div>
                 </div>
 
-                <!-- 입력 필드 -->
-                <div class="space-y-3">
-                    <textarea
-                        id="message-input"
-                        placeholder="메시지를 입력해주세요... (Shift+Enter: 줄바꿈, Enter: 전송)"
-                        rows="3"
-                        class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition resize-none"
-                    ></textarea>
-
-                    <div class="flex gap-2">
-                        <button id="image-upload-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium rounded-lg transition" title="이미지 업로드">🖼️</button>
-                        <button id="send-btn" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition active:scale-95">전송</button>
+                <!-- 채팅 영역 -->
+                <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-4">
+                    <div class="flex items-center justify-center h-full text-slate-500">
+                        <p class="text-center">모델을 선택하고 메시지를 입력해주세요</p>
                     </div>
                 </div>
 
-                <input type="file" id="image-input" accept="image/*" class="hidden">
+                <!-- 입력 영역 -->
+                <div class="bg-slate-900 border-t border-slate-700 p-6 flex-shrink-0 max-h-80 overflow-y-auto">
+                    <!-- 이미지 미리보기 -->
+                    <div id="image-preview-container" class="hidden mb-4 pb-4 border-b border-slate-700">
+                        <div class="relative inline-block">
+                            <img id="image-preview" class="max-w-xs max-h-40 rounded-lg border border-slate-700" alt="Preview">
+                            <button id="remove-image-btn" class="absolute -top-2 -right-2 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center transition text-sm font-bold">✕</button>
+                        </div>
+                    </div>
+
+                    <!-- 입력 필드 -->
+                    <div class="space-y-3">
+                        <textarea
+                            id="message-input"
+                            placeholder="메시지를 입력해주세요... (Shift+Enter: 줄바꿈, Enter: 전송)"
+                            rows="3"
+                            class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition resize-none"
+                        ></textarea>
+
+                        <div class="flex gap-2">
+                            <button id="image-upload-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium rounded-lg transition" title="이미지 업로드">🖼️</button>
+                            <button id="send-btn" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition active:scale-95">전송</button>
+                        </div>
+                    </div>
+
+                    <input type="file" id="image-input" accept="image/*" class="hidden">
+                </div>
             </div>
         </main>
     </div>
