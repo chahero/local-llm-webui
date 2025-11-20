@@ -165,6 +165,7 @@ def save_message():
             conversation_id=conversation.id,
             role='assistant',
             content=full_content,
+            model=model,
             metrics=metrics if metrics else None
         )
         db.session.add(assistant_msg)

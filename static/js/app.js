@@ -707,6 +707,7 @@ class OllamaChat {
                                 finalData = data;
                                 assistantMessage.content = data.full_content;
                                 assistantMessage.metrics = data.metrics;
+                                assistantMessage.model = data.model;
                                 continue;
                             }
 
@@ -807,7 +808,7 @@ class OllamaChat {
             container.appendChild(messageEl);
 
             // 메트릭 정보 표시 (AI 응답만)
-            if (msg.role === 'assistant' && msg.metrics) {
+            if (msg.role === 'assistant' && (msg.metrics || msg.model)) {
                 const metricsEl = document.createElement('div');
                 metricsEl.className = 'flex justify-start mb-4 ml-0';
 
@@ -815,18 +816,27 @@ class OllamaChat {
                 metricContent.className = 'max-w-2xl px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-300 text-sm';
 
                 let metricsHTML = '<div class="space-y-1">';
-                if (msg.metrics.tokens_per_second) {
-                    metricsHTML += `<div><span class="font-semibold">⚡ 토큰 속도:</span> ${msg.metrics.tokens_per_second} tokens/sec</div>`;
+
+                // 모델 정보
+                if (msg.model) {
+                    metricsHTML += `<div><span class="font-semibold">🤖 모델:</span> ${msg.model}</div>`;
                 }
-                if (msg.metrics.generation_time_sec) {
-                    metricsHTML += `<div><span class="font-semibold">⏱️ 생성 시간:</span> ${msg.metrics.generation_time_sec}s</div>`;
+
+                if (msg.metrics) {
+                    if (msg.metrics.tokens_per_second) {
+                        metricsHTML += `<div><span class="font-semibold">⚡ 토큰 속도:</span> ${msg.metrics.tokens_per_second} tokens/sec</div>`;
+                    }
+                    if (msg.metrics.generation_time_sec) {
+                        metricsHTML += `<div><span class="font-semibold">⏱️ 생성 시간:</span> ${msg.metrics.generation_time_sec}s</div>`;
+                    }
+                    if (msg.metrics.prompt_processing_time_sec) {
+                        metricsHTML += `<div><span class="font-semibold">📥 프롬프트 처리:</span> ${msg.metrics.prompt_processing_time_sec}s</div>`;
+                    }
+                    if (msg.metrics.load_time_sec) {
+                        metricsHTML += `<div><span class="font-semibold">📦 모델 로드:</span> ${msg.metrics.load_time_sec}s</div>`;
+                    }
                 }
-                if (msg.metrics.prompt_processing_time_sec) {
-                    metricsHTML += `<div><span class="font-semibold">📥 프롬프트 처리:</span> ${msg.metrics.prompt_processing_time_sec}s</div>`;
-                }
-                if (msg.metrics.load_time_sec) {
-                    metricsHTML += `<div><span class="font-semibold">📦 모델 로드:</span> ${msg.metrics.load_time_sec}s</div>`;
-                }
+
                 metricsHTML += '</div>';
 
                 metricContent.innerHTML = metricsHTML;

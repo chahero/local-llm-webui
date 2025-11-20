@@ -73,6 +73,7 @@ class Message(db.Model):
     role = db.Column(db.String(20), nullable=False)  # 'user' 또는 'assistant'
     content = db.Column(db.Text, nullable=False)
     image = db.Column(db.Text, nullable=True)  # base64 encoded image
+    model = db.Column(db.String(100), nullable=True)  # 사용된 모델명 (assistant 응답만)
     metrics = db.Column(db.JSON, nullable=True)  # {tokens_per_second, generation_time_sec, ...}
     created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
@@ -83,6 +84,7 @@ class Message(db.Model):
             'role': self.role,
             'content': self.content,
             'image': self.image,
+            'model': self.model,
             'metrics': self.metrics,
             'created_at': self.created_at.isoformat()
         }
