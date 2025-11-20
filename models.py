@@ -72,7 +72,7 @@ class Message(db.Model):
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # 'user' 또는 'assistant'
     content = db.Column(db.Text, nullable=False)
-    image = db.Column(db.LongText, nullable=True)  # base64 encoded image
+    image = db.Column(db.Text, nullable=True)  # base64 encoded image
     metrics = db.Column(db.JSON, nullable=True)  # {tokens_per_second, generation_time_sec, ...}
     created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 

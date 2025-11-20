@@ -295,7 +295,7 @@ class OllamaChat {
     // ============ 대화 이력 관련 메서드 ============
 
     async loadConversations() {
-        """대화 목록 불러오기"""
+        // 대화 목록 불러오기
         try {
             const response = await fetch('/api/conversations');
             const data = await response.json();
@@ -310,7 +310,7 @@ class OllamaChat {
     }
 
     renderConversationsList() {
-        """대화 목록 UI 렌더링"""
+        // 대화 목록 UI 렌더링
         const listContainer = document.getElementById('conversations-list');
 
         if (this.conversations.length === 0) {
@@ -345,11 +345,19 @@ class OllamaChat {
                 grouped[group].forEach(conv => {
                     const isSelected = this.currentConversation?.id === conv.id;
                     html += `
-                        <div class="px-3 py-2 mx-2 rounded-lg cursor-pointer transition ${
+                        <div class="group px-3 py-2 mx-2 rounded-lg transition flex items-center justify-between ${
                             isSelected ? 'bg-blue-600 text-white' : 'hover:bg-slate-800 text-slate-300'
-                        }" onclick="chat.selectConversation(${conv.id})" title="${conv.title}">
-                            <div class="truncate text-sm font-medium">${conv.title}</div>
-                            <div class="text-xs ${isSelected ? 'text-blue-100' : 'text-slate-500'}">${conv.model_used || '모델 미정'}</div>
+                        }">
+                            <div class="flex-1 cursor-pointer min-w-0" onclick="chat.selectConversation(${conv.id})" title="${conv.title}">
+                                <div class="truncate text-sm font-medium">${conv.title}</div>
+                                <div class="text-xs ${isSelected ? 'text-blue-100' : 'text-slate-500'}">${conv.model_used || '모델 미정'}</div>
+                            </div>
+                            <button onclick="event.stopPropagation(); chat.deleteConversation(${conv.id})"
+                                    class="ml-2 p-1 rounded opacity-0 group-hover:opacity-100 transition ${
+                                        isSelected ? 'hover:bg-blue-700 text-blue-100' : 'hover:bg-slate-700 text-slate-400'
+                                    }" title="삭제">
+                                🗑️
+                            </button>
                         </div>
                     `;
                 });
@@ -360,7 +368,7 @@ class OllamaChat {
     }
 
     async createConversation() {
-        """새 대화 생성"""
+        // 새 대화 생성
         try {
             const response = await fetch('/api/conversations', {
                 method: 'POST',
@@ -384,7 +392,7 @@ class OllamaChat {
     }
 
     async selectConversation(conversationId) {
-        """대화 선택 및 로드"""
+        // 대화 선택 및 로드
         try {
             const response = await fetch(`/api/conversations/${conversationId}`);
             const data = await response.json();
@@ -406,7 +414,7 @@ class OllamaChat {
     }
 
     async deleteConversation(conversationId) {
-        """대화 삭제"""
+        // 대화 삭제
         if (!confirm('이 대화를 삭제하시겠습니까?')) return;
 
         try {
