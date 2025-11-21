@@ -12,6 +12,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)  # 관리자 여부
+    is_approved = db.Column(db.Boolean, default=False)  # 관리자 승인 여부
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # 관계
@@ -31,6 +33,8 @@ class User(db.Model):
         return {
             'id': self.id,
             'username': self.username,
+            'is_admin': self.is_admin,
+            'is_approved': self.is_approved,
             'created_at': self.created_at.isoformat()
         }
 
