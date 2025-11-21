@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지 - Local LLM WebUI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 overflow-hidden">
+    <!-- 토스트 컨테이너 -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <div class="flex flex-col h-screen">
+        <!-- 헤더 -->
+        <header class="bg-slate-900 border-b border-slate-700 px-6 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-white">👑 관리자 페이지</h1>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 text-sm text-slate-400 border-l border-slate-700 pl-4">
+                        <span>관리자:</span>
+                        <strong id="username-display" class="text-slate-100">-</strong>
+                    </div>
+                    <a href="/" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium rounded-lg transition text-sm">돌아가기</a>
+                    <button id="logout-btn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium rounded-lg transition text-sm">로그아웃</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 메인 콘텐츠 -->
+        <main class="flex-1 overflow-hidden flex flex-col">
+            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                <!-- 미승인 사용자 섹션 -->
+                <section class="bg-slate-900 rounded-lg border border-slate-700 p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">⏳ 승인 대기 중인 사용자</h2>
+                    <div id="pending-users-list" class="space-y-2">
+                        <p class="text-center text-slate-400 py-4">로딩 중...</p>
+                    </div>
+                </section>
+
+                <!-- 전체 사용자 섹션 -->
+                <section class="bg-slate-900 rounded-lg border border-slate-700 p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">👥 전체 사용자 목록</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="border-b border-slate-700">
+                                <tr class="text-slate-300">
+                                    <th class="text-left py-3 px-4">사용자명</th>
+                                    <th class="text-left py-3 px-4">상태</th>
+                                    <th class="text-left py-3 px-4">권한</th>
+                                    <th class="text-center py-3 px-4">작업</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body" class="divide-y divide-slate-700">
+                                <tr>
+                                    <td class="py-3 px-4" colspan="4">
+                                        <p class="text-center text-slate-400">로딩 중...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 토스트 함수
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const styles = {
+                success: 'bg-emerald-900 border-emerald-700 text-emerald-100',
+                error: 'bg-red-900 border-red-700 text-red-100',
+                info: 'bg-blue-900 border-blue-700 text-blue-100'
+            };
+
+            const icons = {
+                success: '✓',
+                error: '✕',
+                info: 'ℹ'
+            };
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg border ${styles[type]} shadow-lg animate-in fade-in slide-in-from-right-full duration-300`;
+            toast.innerHTML = `
+                <span class="text-lg font-bold flex-shrink-0">${icons[type]}</span>
+                <span class="flex-1">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('fade-in', 'slide-in-from-right-full');
+                toast.classList.add('fade-out', 'slide-out-to-right-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUsers();
+            setupLogout();
+        });
+
+        // 로그아웃
+        function setupLogout() {
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/api/auth/logout', { method: 'POST' });
+                    if (response.ok) {
+                        window.location.href = '/login';
+                    }
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    showToast('로그아웃 중 오류가 발생했습니다', 'error');
+                }
+            });
+        }
+
+        // 사용자 정보 로드
+        async function loadUsers() {
+            try {
+                // 현재 사용자 정보
+                const authResponse = await fetch('/api/auth/check');
+                const authData = await authResponse.json();
+                if (authData.authenticated) {
+                    document.getElementById('username-display').textContent = authData.user.username;
+                }
+
+                // 모든 사용자 목록
+                const response = await fetch('/api/auth/users');
+                const data = await response.json();
+
+                if (data.success) {
+                    renderUsers(data.users);
+                } else {
+                    showToast('사용자 목록을 불러올 수 없습니다', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showToast('사용자 목록을 불러오는 중 오류가 발생했습니다', 'error');
+            }
+        }
+
+        // 사용자 목록 렌더링
+        function renderUsers(users) {
+            const pendingUsers = users.filter(u => !u.is_approved);
+            const approvedUsers = users.filter(u => u.is_approved);
+
+            // 미승인 사용자
+            const pendingContainer = document.getElementById('pending-users-list');
+            if (pendingUsers.length === 0) {
+                pendingContainer.innerHTML = '<p class="text-center text-slate-400 py-4">승인 대기 중인 사용자가 없습니다</p>';
+            } else {
+                pendingContainer.innerHTML = pendingUsers.map(user => `
+                    <div class="flex items-center justify-between p-4 bg-slate-800 rounded-lg border border-slate-700">
+                        <div>
+                            <p class="font-semibold text-white">${user.username}</p>
+                            <p class="text-xs text-slate-400">ID: ${user.id}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="approveUser(${user.id})" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition">✓ 승인</button>
+                            <button onclick="rejectUser(${user.id})" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition">✕ 거부</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // 전체 사용자 테이블
+            const tableBody = document.getElementById('users-table-body');
+            if (approvedUsers.length === 0) {
+                tableBody.innerHTML = '<tr><td class="py-3 px-4" colspan="4"><p class="text-center text-slate-400">사용자가 없습니다</p></td></tr>';
+            } else {
+                tableBody.innerHTML = approvedUsers.map(user => `
+                    <tr class="hover:bg-slate-800 transition">
+                        <td class="py-3 px-4 font-medium">${user.username}</td>
+                        <td class="py-3 px-4">
+                            <span class="inline-block px-2 py-1 text-xs font-semibold rounded-full ${user.is_approved ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">
+                                ${user.is_approved ? '✓ 승인됨' : '⏳ 대기 중'}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            ${user.is_admin ? '<span class="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-400">👑 관리자</span>' : '<span class="text-slate-400">사용자</span>'}
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            ${user.is_admin ? '<span class="text-slate-500 text-xs">삭제 불가</span>' : `<button onclick="deleteUser(${user.id}, '${user.username}')" class="px-3 py-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs rounded transition">삭제</button>`}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // 사용자 승인
+        async function approveUser(userId) {
+            try {
+                const response = await fetch(`/api/auth/users/${userId}/approve`, { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('사용자가 승인되었습니다', 'success');
+                    loadUsers();
+                } else {
+                    showToast(data.message || '사용자 승인에 실패했습니다', 'error');
+                }
+            } catch (error) {
+                console.error('Approve error:', error);
+                showToast('사용자 승인 중 오류가 발생했습니다', 'error');
+            }
+        }
+
+        // 사용자 거부
+        async function rejectUser(userId) {
+            if (!confirm('이 사용자를 거부하시겠습니까?')) return;
+
+            try {
+                const response = await fetch(`/api/auth/users/${userId}/reject`, { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('사용자가 거부되었습니다', 'success');
+                    loadUsers();
+                } else {
+                    showToast(data.message || '사용자 거부에 실패했습니다', 'error');
+                }
+            } catch (error) {
+                console.error('Reject error:', error);
+                showToast('사용자 거부 중 오류가 발생했습니다', 'error');
+            }
+        }
+
+        // 사용자 삭제
+        async function deleteUser(userId, username) {
+            if (!confirm(`${username} 사용자를 삭제하시겠습니까?`)) return;
+
+            try {
+                const response = await fetch(`/api/auth/users/${userId}/reject`, { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('사용자가 삭제되었습니다', 'success');
+                    loadUsers();
+                } else {
+                    showToast(data.message || '사용자 삭제에 실패했습니다', 'error');
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('사용자 삭제 중 오류가 발생했습니다', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

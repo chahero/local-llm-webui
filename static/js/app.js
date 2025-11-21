@@ -289,15 +289,15 @@ class OllamaChat {
     updateUserDisplay() {
         // 사용자 정보 표시
         const usernameDisplay = document.getElementById('username-display');
-        const adminBadge = document.getElementById('admin-badge');
+        const adminLink = document.getElementById('admin-link');
         if (this.currentUser && usernameDisplay) {
             usernameDisplay.textContent = this.currentUser.username;
 
-            // Admin 배지 표시
-            if (this.currentUser.is_admin) {
-                adminBadge.classList.remove('hidden');
-            } else {
-                adminBadge.classList.add('hidden');
+            // Admin 링크 표시
+            if (this.currentUser.is_admin && adminLink) {
+                adminLink.classList.remove('hidden');
+            } else if (adminLink) {
+                adminLink.classList.add('hidden');
             }
         }
     }

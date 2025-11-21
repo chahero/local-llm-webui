@@ -36,6 +36,21 @@ def create_app():
             return redirect(url_for('index'))
         return render_template('login.html')
 
+    @app.route('/admin')
+    def admin():
+        """Admin page (관리자 권한 필수)"""
+        # 로그인 확인
+        if not session.get('user_id'):
+            return redirect(url_for('login'))
+
+        # 관리자 권한 확인
+        from models import User
+        user = User.query.get(session.get('user_id'))
+        if not user or not user.is_admin:
+            return redirect(url_for('index'))
+
+        return render_template('admin.html')
+
     return app
 
 if __name__ == '__main__':
