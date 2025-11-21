@@ -290,6 +290,7 @@ class OllamaChat {
         // 사용자 정보 표시
         const usernameDisplay = document.getElementById('username-display');
         const adminLink = document.getElementById('admin-link');
+        const modelsBtn = document.getElementById('models-btn');
         if (this.currentUser && usernameDisplay) {
             usernameDisplay.textContent = this.currentUser.username;
 
@@ -298,6 +299,13 @@ class OllamaChat {
                 adminLink.classList.remove('hidden');
             } else if (adminLink) {
                 adminLink.classList.add('hidden');
+            }
+
+            // 모델 관리 버튼 표시 (Admin만)
+            if (this.currentUser.is_admin && modelsBtn) {
+                modelsBtn.classList.remove('hidden');
+            } else if (modelsBtn) {
+                modelsBtn.classList.add('hidden');
             }
         }
     }
