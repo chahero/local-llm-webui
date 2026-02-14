@@ -52,7 +52,7 @@ SECRET_KEY=your-secret-key-here
 SERVER_PORT=5001
 
 # SQLite 설정
-DATABASE_PATH=./app.db
+DATABASE_PATH=./instance/app.db
 ```
 
 ### 4. 서버 실행
@@ -110,7 +110,7 @@ local-llm-webui/
 ├── models.py              # SQLAlchemy User 모델
 ├── requirements.txt       # Python 의존성
 ├── .env                   # 환경 변수 설정
-├── app.db                 # SQLite 데이터베이스 (자동 생성)
+├── instance/app.db                 # SQLite 데이터베이스 (자동 생성)
 ├── routes/
 │   ├── api.py            # 채팅/모델 관리 API
 │   └── auth.py           # 인증 API (로그인/로그아웃)
@@ -160,7 +160,7 @@ local-llm-webui/
 | FLASK_DEBUG | Flask Debug 모드 | True |
 | SECRET_KEY | Flask 세션 암호화 키 | dev-secret-key |
 | SERVER_PORT | 웹 서버 포트 | 5001 |
-| DATABASE_PATH | SQLite DB 경로 | ./app.db |
+| DATABASE_PATH | SQLite DB 경로 | ./instance/app.db |
 
 ## 🔒 보안
 
@@ -193,7 +193,7 @@ local-llm-webui/
 
 ### 데이터베이스 초기화
 ```bash
-rm app.db
+rm instance/app.db
 python main.py  # 새 데이터베이스 자동 생성
 ```
 
@@ -266,3 +266,5 @@ A: 입문용: llama2, mistral / 고급용: neural-chat, orca-mini, gpt-oss
 
 **작성일**: 2025년 11월
 **버전**: 1.1.0
+
+
