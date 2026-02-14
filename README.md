@@ -52,7 +52,7 @@ SECRET_KEY=your-secret-key-here
 SERVER_PORT=5001
 
 # SQLite settings
-DATABASE_PATH=./app.db
+DATABASE_PATH=./instance/app.db
 ```
 
 ### 4. Run the Server
@@ -96,7 +96,7 @@ local-llm-webui/
 ├── models.py              # SQLAlchemy User model
 ├── requirements.txt       # Python dependencies
 ├── .env                   # Environment variable settings
-├── app.db                 # SQLite database (auto-created)
+├── instance/app.db                 # SQLite database (auto-created)
 ├── routes/
 │   ├── api.py            # Chat/model management API
 │   └── auth.py           # Authentication API (login/logout)
@@ -146,7 +146,7 @@ local-llm-webui/
 | FLASK_DEBUG | Flask Debug mode | True |
 | SECRET_KEY | Flask session encryption key | dev-secret-key |
 | SERVER_PORT | Web server port | 5001 |
-| DATABASE_PATH | SQLite DB path | ./app.db |
+| DATABASE_PATH | SQLite DB path | ./instance/app.db |
 
 ## 🔒 Security
 
@@ -179,7 +179,7 @@ Solution:
 
 ### Database Reset
 ```bash
-rm app.db
+rm instance/app.db
 python main.py  # New database will be created automatically
 ```
 
@@ -252,3 +252,4 @@ A: Beginner: llama2, mistral / Advanced: neural-chat, orca-mini
 
 **Created**: November 2025
 **Version**: 1.1.0
+
