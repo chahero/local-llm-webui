@@ -8,7 +8,6 @@ api_bp = Blueprint('api', __name__, url_prefix='/api')
 ollama = OllamaClient()
 
 @api_bp.route('/health', methods=['GET'])
-@login_required
 def health_check():
     """Ollama 서버 연결 확인"""
     result = ollama.check_connection()
