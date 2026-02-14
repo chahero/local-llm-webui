@@ -8,7 +8,9 @@ class Config:
     """Application configuration."""
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key')
     OLLAMA_API_URL = os.getenv('OLLAMA_API_URL', 'http://localhost:11434')
-    DEBUG = os.getenv('FLASK_DEBUG', False)
+    DEBUG = str(os.getenv('FLASK_DEBUG', 'False')).lower() in (
+        '1', 'true', 't', 'yes', 'y', 'on'
+    )
     SERVER_PORT = int(os.getenv('SERVER_PORT', 5000))
 
     # SQLite 설정 - 항상 절대 경로 사용
